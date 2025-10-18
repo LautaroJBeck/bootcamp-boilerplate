@@ -19,8 +19,9 @@ const theme = createTheme({
     borderRadius: 12,
   },
   typography: {
-    fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"',
+    fontFamily: '"Poppins", "Helvetica", "Arial", sans-serif',
     h6: {
+      fontFamily: '"Coming Soon", "Poppins", "Helvetica", "Arial", sans-serif',
       fontWeight: 700,
     },
     body2: {
