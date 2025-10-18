@@ -35,6 +35,7 @@ function ExampleSubmitComponent({ open, onClose, onAdded }: ExampleSubmitCompone
   }
 
   return (
+    
     <Dialog open={open} onClose={() => !submitting && onClose()} fullWidth maxWidth="sm">
       <DialogTitle>Add a new pet</DialogTitle>
       <DialogContent dividers>

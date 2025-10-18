@@ -147,34 +147,6 @@ function ExampleDashboard() {
             onChange={(e) => setQuery(e.target.value)}
             sx={{ minWidth: 260, mr: 1 }}
           />
-
-          <FormControl size="small" sx={{ minWidth: 160, mr: 1 }}>
-            <InputLabel id="sort-by-label">Sort by</InputLabel>
-            <Select
-              labelId="sort-by-label"
-              value={sortBy}
-              label="Sort by"
-              onChange={(e) => setSortBy(e.target.value as 'name' | 'age' | 'breed')}
-            >
-              <MenuItem value="name">Name (A–Z)</MenuItem>
-              <MenuItem value="age">Age (young → old)</MenuItem>
-              <MenuItem value="breed">Breed (A–Z)</MenuItem>
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 120, mr: 2 }}>
-            <InputLabel id="sort-dir-label">Order</InputLabel>
-            <Select
-              labelId="sort-dir-label"
-              value={sortDir}
-              label="Order"
-              onChange={(e) => setSortDir(e.target.value as 'asc' | 'desc')}
-            >
-              <MenuItem value="asc">Asc</MenuItem>
-              <MenuItem value="desc">Desc</MenuItem>
-            </Select>
-          </FormControl>
-          <Button variant="contained" onClick={() => setAddOpen(true)}>Add Pet</Button>
         </Toolbar>
       </AppBar>
 
