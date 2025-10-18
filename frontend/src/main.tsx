@@ -8,8 +8,6 @@ import ExampleDashboard from './ExampleDashboard.tsx'
 import AboutUs from './AboutUs.jsx'
 // @ts-ignore
 import PlanYourVisit from './PlanYourVisit.jsx'
-// @ts-ignore
-import SharedHeader from './SharedHeader.jsx'
 
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
