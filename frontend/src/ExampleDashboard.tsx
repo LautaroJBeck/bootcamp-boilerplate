@@ -12,6 +12,12 @@ import CardMedia from '@mui/material/CardMedia'
 import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import Chip from '@mui/material/Chip'
+import Divider from '@mui/material/Divider'
 import {getPets} from './ExampleApi'
 import Button from '@mui/material/Button'
 import ExampleSubmitComponent from './ExampleSubmitComponent'
@@ -35,6 +41,16 @@ function ExampleDashboard() {
   const [addOpen, setAddOpen] = useState<boolean>(false)
   const [editOpen, setEditOpen] = useState<boolean>(false)
   const [selectedPet, setSelectedPet] = useState<any>(null)
+  
+  // Filter states
+  const [minAge, setMinAge] = useState('')
+  const [maxAge, setMaxAge] = useState('')
+  const [selectedBreed, setSelectedBreed] = useState('')
+  const [appliedFilters, setAppliedFilters] = useState({
+    minAge: null as number | null,
+    maxAge: null as number | null,
+    breed: ''
+  })
 
   const refreshPets = async () => {
     try {
@@ -57,15 +73,64 @@ function ExampleDashboard() {
     refreshPets();
   }, [])
 
-  const filtered = useMemo(() => {
-    const q = query.trim()
-    if (!q) return data
-    return data.filter((pet: any) => {
-      const name = String(pet.name || '')
-      const breed = String(pet.breed || '')
-      return name.includes(q) || breed.includes(q)
+  // Get unique breeds from pets list
+  const uniqueBreeds = useMemo(() => {
+    const breeds = data.map(pet => pet.breed).filter(Boolean)
+    return [...new Set(breeds)].sort()
+  }, [data])
+
+  const applyFilters = () => {
+    setAppliedFilters({
+      minAge: minAge ? Number(minAge) : null,
+      maxAge: maxAge ? Number(maxAge) : null,
+      breed: selectedBreed
     })
-  }, [data, query])
+  }
+
+  const clearFilters = () => {
+    setMinAge('')
+    setMaxAge('')
+    setSelectedBreed('')
+    setQuery('')
+    setAppliedFilters({
+      minAge: null,
+      maxAge: null,
+      breed: ''
+    })
+  }
+
+  const filtered = useMemo(() => {
+    let filtered = data
+
+    // Text search
+    const q = query.trim()
+    if (q) {
+      filtered = filtered.filter((pet: any) => {
+        const name = String(pet.name || '').toLowerCase()
+        const breed = String(pet.breed || '').toLowerCase()
+        return name.includes(q.toLowerCase()) || breed.includes(q.toLowerCase())
+      })
+    }
+
+    // Age range filter
+    if (appliedFilters.minAge !== null || appliedFilters.maxAge !== null) {
+      filtered = filtered.filter(pet => {
+        const age = Number(pet.age)
+        if (isNaN(age)) return false
+        
+        if (appliedFilters.minAge !== null && age < appliedFilters.minAge) return false
+        if (appliedFilters.maxAge !== null && age > appliedFilters.maxAge) return false
+        return true
+      })
+    }
+
+    // Breed filter
+    if (appliedFilters.breed) {
+      filtered = filtered.filter(pet => pet.breed === appliedFilters.breed)
+    }
+
+    return filtered
+  }, [data, query, appliedFilters])
 
   const petCards = filtered.map((pet: any) => { //for local json file: change "data" to "pets" and uncomment the json import line 
     return (
@@ -122,22 +187,300 @@ function ExampleDashboard() {
       </AppBar>
 
       <Container maxWidth="lg">
-        <Box className="dashboard" sx={{py: 4}}>
-          {loading && (
-            <Box sx={{display: 'flex', justifyContent: 'center', py: 8}}>
-              <CircularProgress />
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          py: 4,
+          flexDirection: { xs: 'column', lg: 'row' }
+        }}>
+          {/* Main content area */}
+          <Box sx={{ flex: 1 }}>
+            {loading && (
+              <Box sx={{display: 'flex', justifyContent: 'center', py: 8}}>
+                <CircularProgress />
+              </Box>
+            )}
+
+            {!loading && error && (
+              <Alert severity="error">{error}</Alert>
+            )}
+
+            {!loading && !error && (
+              <div className="pet-grid">
+                {petCards}
+              </div>
+            )}
+          </Box>
+
+          {/* Filter Sidebar */}
+          <Box
+            component="aside"
+            sx={{
+              width: { xs: '100%', lg: 200 },
+              alignSelf: 'flex-start',
+              position: { xs: 'static', lg: 'sticky' },
+              top: 100,
+              borderLeft: { xs: 'none', lg: '1px solid #d97706' },
+              borderTop: { xs: '1px solid #d97706', lg: 'none' },
+              pl: { xs: 1.5, lg: 1.5 },
+              pr: { xs: 1.5, lg: 1 },
+              py: 1.5,
+              backgroundColor: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+              borderRadius: 2,
+              height: 'fit-content',
+              order: { xs: -1, lg: 0 },
+              boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #f59e0b'
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ 
+              fontWeight: 700, 
+              mb: 1.5, 
+              color: '#92400e',
+              textAlign: 'center',
+              fontSize: '0.9rem'
+            }}>
+              🍂 Filters
+            </Typography>
+
+            {/* Age Range Filter */}
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="caption" sx={{ 
+                fontWeight: 600, 
+                mb: 0.5, 
+                color: '#92400e',
+                fontSize: '0.75rem',
+                display: 'block'
+              }}>
+                🎂 Age
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <TextField
+                  size="small"
+                  type="number"
+                  placeholder="Min"
+                  value={minAge}
+                  onChange={(e) => setMinAge(e.target.value)}
+                  sx={{ 
+                    width: '45%',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      backgroundColor: '#ffffff',
+                      fontSize: '0.75rem',
+                      height: '32px',
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#d97706'
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#b45309'
+                      }
+                    }
+                  }}
+                  inputProps={{ min: 0, step: 0.1 }}
+                />
+                <TextField
+                  size="small"
+                  type="number"
+                  placeholder="Max"
+                  value={maxAge}
+                  onChange={(e) => setMaxAge(e.target.value)}
+                  sx={{ 
+                    width: '45%',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      backgroundColor: '#ffffff',
+                      fontSize: '0.75rem',
+                      height: '32px',
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#d97706'
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#b45309'
+                      }
+                    }
+                  }}
+                  inputProps={{ min: 0, step: 0.1 }}
+                />
+              </Box>
             </Box>
-          )}
 
-          {!loading && error && (
-            <Alert severity="error">{error}</Alert>
-          )}
+            <Divider sx={{ 
+              mb: 1.5, 
+              borderColor: '#d97706',
+              opacity: 0.3
+            }} />
 
-          {!loading && !error && (
-            <div className="pet-grid">
-              {petCards}
-            </div>
-          )}
+            {/* Breed Filter */}
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="caption" sx={{ 
+                fontWeight: 600, 
+                mb: 0.5, 
+                color: '#92400e',
+                fontSize: '0.75rem',
+                display: 'block'
+              }}>
+                🐕 Breed
+              </Typography>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={selectedBreed}
+                  onChange={(e) => setSelectedBreed(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    borderRadius: 1.5,
+                    backgroundColor: '#ffffff',
+                    fontSize: '0.75rem',
+                    height: '32px',
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#d97706'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#b45309'
+                    }
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.75rem' }}>
+                    <em>All Breeds</em>
+                  </MenuItem>
+                  {uniqueBreeds.map((breed) => (
+                    <MenuItem key={breed} value={breed} sx={{ fontSize: '0.75rem' }}>
+                      {breed}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Divider sx={{ 
+              mb: 1.5, 
+              borderColor: '#d97706',
+              opacity: 0.3
+            }} />
+
+            {/* Active Filters Display */}
+            {(appliedFilters.minAge !== null || appliedFilters.maxAge !== null || appliedFilters.breed) && (
+              <Box sx={{ mb: 1.5 }}>
+                <Typography variant="caption" sx={{ 
+                  fontWeight: 600, 
+                  mb: 0.5, 
+                  color: '#92400e',
+                  fontSize: '0.7rem',
+                  display: 'block'
+                }}>
+                  ✨ Active:
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25 }}>
+                  {appliedFilters.minAge !== null && (
+                    <Chip 
+                      label={`${appliedFilters.minAge}+`} 
+                      size="small" 
+                      sx={{
+                        backgroundColor: '#fef3c7',
+                        color: '#92400e',
+                        border: '1px solid #d97706',
+                        fontWeight: 500,
+                        fontSize: '0.65rem',
+                        height: '20px'
+                      }}
+                    />
+                  )}
+                  {appliedFilters.maxAge !== null && (
+                    <Chip 
+                      label={`${appliedFilters.maxAge}-`} 
+                      size="small" 
+                      sx={{
+                        backgroundColor: '#fef3c7',
+                        color: '#92400e',
+                        border: '1px solid #d97706',
+                        fontWeight: 500,
+                        fontSize: '0.65rem',
+                        height: '20px'
+                      }}
+                    />
+                  )}
+                  {appliedFilters.breed && (
+                    <Chip 
+                      label={appliedFilters.breed.length > 8 ? appliedFilters.breed.substring(0, 8) + '...' : appliedFilters.breed} 
+                      size="small" 
+                      sx={{
+                        backgroundColor: '#fde68a',
+                        color: '#92400e',
+                        border: '1px solid #b45309',
+                        fontWeight: 500,
+                        fontSize: '0.65rem',
+                        height: '20px'
+                      }}
+                    />
+                  )}
+                </Box>
+              </Box>
+            )}
+
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Button 
+                variant="contained" 
+                fullWidth 
+                onClick={applyFilters}
+                size="small"
+                sx={{ 
+                  borderRadius: 1.5,
+                  fontWeight: 600,
+                  py: 0.8,
+                  fontSize: '0.75rem',
+                  background: 'linear-gradient(45deg, #d97706, #b45309)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #b45309, #92400e)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                🔍 Search
+              </Button>
+              <Button 
+                variant="outlined" 
+                fullWidth 
+                onClick={clearFilters}
+                size="small"
+                sx={{ 
+                  borderRadius: 1.5,
+                  fontWeight: 600,
+                  py: 0.8,
+                  fontSize: '0.75rem',
+                  borderColor: '#d97706',
+                  color: '#92400e',
+                  '&:hover': {
+                    borderColor: '#b45309',
+                    backgroundColor: '#fef3c7',
+                    transform: 'translateY(-1px)'
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                🍂 Clear
+              </Button>
+            </Box>
+
+            {/* Results Count */}
+            <Box sx={{ 
+              mt: 1.5, 
+              textAlign: 'center',
+              p: 1,
+              backgroundColor: '#fef3c7',
+              borderRadius: 1.5,
+              border: '1px solid #fde68a'
+            }}>
+              <Typography variant="caption" sx={{ 
+                color: '#92400e',
+                fontWeight: 500,
+                fontSize: '0.7rem'
+              }}>
+                🐾 {filtered.length}/{data.length}
+              </Typography>
+            </Box>
+          </Box>
         </Box>
       </Container>
 
